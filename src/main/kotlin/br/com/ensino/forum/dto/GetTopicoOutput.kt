@@ -5,8 +5,8 @@ import java.time.LocalDateTime
 
 data class GetTopicoOutput(
     val id: Long?,
-    val titulo: String,
-    val mensagem: String,
+    var titulo: String,
+    var mensagem: String,
     val status: StatusTopico,
     val dataCriacao: LocalDateTime
 )

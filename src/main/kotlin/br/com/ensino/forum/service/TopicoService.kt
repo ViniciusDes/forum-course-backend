@@ -3,70 +3,61 @@ package br.com.ensino.forum.service
 import br.com.ensino.forum.dto.GetTopicoOutput
 import br.com.ensino.forum.dto.PostTopicoDto
 import br.com.ensino.forum.dto.PutTopicoDto
+import br.com.ensino.forum.dto.TopicoPorCategoria
 import br.com.ensino.forum.exception.NotFoundException
 import br.com.ensino.forum.mapper.TopicoInputMapper
 import br.com.ensino.forum.mapper.TopicoViewMapper
-import br.com.ensino.forum.model.Topico
+import br.com.ensino.forum.repository.TopicoRepository
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
-import java.util.stream.Collectors
-import kotlin.collections.ArrayList
 
 @Service
 class TopicoService(
-    private var topicos: List<Topico> = ArrayList(),
-    private var topicoViewMapper: TopicoViewMapper,
-    private val topicoInputMapper: TopicoInputMapper
+    private val topicoRepository: TopicoRepository,
+    private val topicoViewMapper: TopicoViewMapper,
+    private val topicoInputMapper: TopicoInputMapper,
 ) {
 
-    fun listar(): List<GetTopicoOutput> {
-        return topicos.stream().map { it -> topicoViewMapper.map(it) }.collect(Collectors.toList())
+    fun listar(nomeCurso: String?, paginacao: Pageable): Page<GetTopicoOutput> {
+        val topicos = if(nomeCurso == null) {
+            topicoRepository.findAll(paginacao)
+        } else {
+            topicoRepository.findByCursoNome(nomeCurso, paginacao)
+        }
+        return topicos.map { it -> topicoViewMapper.map(it) }
     }
 
     fun listarPorId(id: Long): GetTopicoOutput {
-        val topico = topicos.stream().filter({ t ->
-            t.id == id
-        }).findFirst().get()
+        val topico = topicoRepository.findById(id).orElseThrow{
+            NotFoundException("Not found here")
+        }
 
         return topicoViewMapper.map(topico)
     }
 
     fun cadastrar(topicoDto: PostTopicoDto): GetTopicoOutput {
         val topico = topicoInputMapper.map(topicoDto)
-        topico.id = topicos.size.toLong() + 1
-        topicos = topicos.plus(
-            topico
-        )
-
+        topicoRepository.save(topico)
         return topicoViewMapper.map(topico)
     }
 
     fun atualizarTopico(topicoDto: PutTopicoDto): GetTopicoOutput {
-        val topico = topicos.stream().filter { t ->
-            t.id == topicoDto.id
-        }.findFirst().orElseThrow{NotFoundException("Topico não encontrado")}
-        val topicoAtualizado = Topico(
-            id = topicoDto.id,
-            titulo = topicoDto.titulo,
-            mensagem = topicoDto.mensagem,
-            dataCriacao = topico.dataCriacao,
-            curso = topico.curso,
-            autor = topico.autor,
-            status = topico.status,
-            respostas = topico.respostas
-        )
-        topicos = topicos.minus(topico).plus(
-           topicoAtualizado
-        )
-
-        return topicoViewMapper.map(topicoAtualizado)
+        val topico = topicoRepository.findById(topicoDto.id).orElseThrow{
+            NotFoundException("Not found here")
+        }
+        topico.titulo = topicoDto.titulo
+        topico.mensagem = topicoDto.mensagem
+        topicoRepository.save(topico)
+        return topicoViewMapper.map(topico)
 
     }
 
     fun deletarTopico(id: Long) {
-        val topico = topicos.stream().filter { t ->
-            t.id == id
-        }.findFirst().orElseThrow{NotFoundException("Topico não encontrado")}
+        topicoRepository.deleteById(id)
+    }
 
-        topicos = topicos.minus(topico)
+    fun relatorio(): List<TopicoPorCategoria> {
+        return topicoRepository.relatorio()
     }
 }

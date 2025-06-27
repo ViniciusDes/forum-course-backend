@@ -12,7 +12,7 @@ class TopicoViewMapper: Mapper<Topico, GetTopicoOutput> {
                 titulo = input.titulo,
                 mensagem = input.mensagem,
                 status = input.status,
-                dataCriacao = input.dataCriacao,
+                dataCriacao = input.data_criacao,
         )
     }
 }

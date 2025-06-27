@@ -19,5 +19,4 @@ class TopicoInputMapper(
             autor = usuarioService.encontrarUsuarioPorId(input.idAutor),
         )
     }
-
 }
